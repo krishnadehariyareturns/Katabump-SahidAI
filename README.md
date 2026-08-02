@@ -15,7 +15,7 @@ command to reset a channel's history.
 - `/clear` slash command wipes a channel's stored history.
 - All secrets via environment variables. Structured logging throughout.
 
-## Project structure
+### Project structure
 
 ```
 src/
