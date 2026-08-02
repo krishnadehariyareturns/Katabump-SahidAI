@@ -22,7 +22,7 @@ jobs:
           port: ${{ secrets.SFTP_PORT }}
           uploads: |
             ./ => /
-          excludes: |
+          ignore: |
             **/.git/**
             **/.github/**
             **/node_modules/**
