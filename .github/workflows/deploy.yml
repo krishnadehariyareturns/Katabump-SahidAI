@@ -13,6 +13,8 @@ jobs:
     env:
       SFTP_HOST: ${{ secrets.SFTP_HOST }}
       SFTP_PORT: ${{ secrets.SFTP_PORT }}
+      SFTP_USER: ${{ secrets.SFTP_USERNAME }}
+      SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
 
     steps:
       - name: Checkout repository
@@ -28,31 +30,22 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
 
-      - name: Show remote directory
-        env:
-          SFTP_USER: ${{ secrets.SFTP_USERNAME }}
-          SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
+      - name: Deploy files
         run: |
           lftp -u "$SFTP_USER","$SFTP_PASS" sftp://$SFTP_HOST:$SFTP_PORT <<EOF
-          pwd
-          ls
-          bye
-          EOF
+          set ssl:verify-certificate no
+          set xfer:clobber on
 
-      - name: Upload files
-        env:
-          SFTP_USER: ${{ secrets.SFTP_USERNAME }}
-          SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
-        run: |
-          lftp -u "$SFTP_USER","$SFTP_PASS" sftp://$SFTP_HOST:$SFTP_PORT <<EOF
           mirror -R \
             --verbose \
             --only-newer \
+            --no-perms \
             --exclude-glob .git \
             --exclude-glob .github \
             --exclude-glob node_modules \
             --exclude-glob .env \
             --exclude-glob README.md \
             ./ /
+
           bye
           EOF
