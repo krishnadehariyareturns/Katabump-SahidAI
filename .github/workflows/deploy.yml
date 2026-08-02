@@ -1,31 +1,58 @@
-name: Deploy Discord Bot
+name: Deploy to Katabump
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      SFTP_HOST: ${{ secrets.SFTP_HOST }}
+      SFTP_PORT: ${{ secrets.SFTP_PORT }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upload bot files
-        uses: Dylan700/sftp-upload-action@latest
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT }}
-          uploads: |
-            ./ => /home/container/
-          ignore: |
-            **/.git/**
-            **/.github/**
-            **/node_modules/**
-            **/.env
-            **/.gitignore
-            **/README.md
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp openssh-client
+
+      - name: Trust SFTP host
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$SFTP_PORT" "$SFTP_HOST" >> ~/.ssh/known_hosts
+
+      - name: Show remote directory
+        env:
+          SFTP_USER: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          lftp -u "$SFTP_USER","$SFTP_PASS" sftp://$SFTP_HOST:$SFTP_PORT <<EOF
+          pwd
+          ls
+          bye
+          EOF
+
+      - name: Upload files
+        env:
+          SFTP_USER: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          lftp -u "$SFTP_USER","$SFTP_PASS" sftp://$SFTP_HOST:$SFTP_PORT <<EOF
+          mirror -R \
+            --verbose \
+            --only-newer \
+            --exclude-glob .git \
+            --exclude-glob .github \
+            --exclude-glob node_modules \
+            --exclude-glob .env \
+            --exclude-glob README.md \
+            ./ /
+          bye
+          EOF
