@@ -115,4 +115,5 @@ Running `/clear` posts a confirmation prompt with **Yes** (green) and
 - **SQLite via `better-sqlite3`** is synchronous and file-based — great for
   a single-process bot. If you ever run multiple bot instances against the
   same database concurrently, you'd want to migrate to a networked DB
-  (Postgres, etc.) instead..
+  (Postgres, etc.) instead.
+  
